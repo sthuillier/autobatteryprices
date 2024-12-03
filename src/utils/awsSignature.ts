@@ -1,8 +1,36 @@
-import crypto from 'crypto';
 import { AxiosRequestConfig } from 'axios';
 import { AmazonConfig } from '../config/amazon';
 
-export function signRequest(config: AxiosRequestConfig, amazonConfig: AmazonConfig): AxiosRequestConfig {
+async function hashData(data: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const dataBuffer = encoder.encode(data);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function generateHMAC(key: string, data: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyBuffer = encoder.encode(key);
+  const dataBuffer = encoder.encode(data);
+
+  const importedKey = await crypto.subtle.importKey(
+    'raw',
+    keyBuffer,
+    { name: 'HMAC', hash: { name: 'SHA-256' } },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign('HMAC', importedKey, dataBuffer);
+
+  return Array.from(new Uint8Array(signature))
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+export async function signRequest(config: AxiosRequestConfig, amazonConfig: AmazonConfig): AxiosRequestConfig {
   const timestamp = new Date().toISOString();
   const date = timestamp.split('T')[0];
 
@@ -16,7 +44,7 @@ export function signRequest(config: AxiosRequestConfig, amazonConfig: AmazonConf
     `x-amz-date:${timestamp}`,
     '',
     'content-type;host;x-amz-date',
-    crypto.createHash('sha256').update(JSON.stringify(config.data) || '').digest('hex')
+    await hashData(JSON.stringify(config.data) || '')
   ].join('\n');
 
   // Create string to sign
@@ -24,17 +52,17 @@ export function signRequest(config: AxiosRequestConfig, amazonConfig: AmazonConf
     'AWS4-HMAC-SHA256',
     timestamp,
     `${date}/${amazonConfig.region}/ProductAdvertisingAPI/aws4_request`,
-    crypto.createHash('sha256').update(canonicalRequest).digest('hex')
+    await hashData(canonicalRequest)
   ].join('\n');
 
-  // Calculate signature
+  // Calculate signature using HMAC
   let key = `AWS4${amazonConfig.secretAccessKey}`;
-  key = crypto.createHmac('sha256', key).update(date).digest('hex');
-  key = crypto.createHmac('sha256', key).update(amazonConfig.region).digest('hex');
-  key = crypto.createHmac('sha256', key).update('ProductAdvertisingAPI').digest('hex');
-  key = crypto.createHmac('sha256', key).update('aws4_request').digest('hex');
-  
-  const signature = crypto.createHmac('sha256', key).update(stringToSign).digest('hex');
+  key = await generateHMAC(key, date);
+  key = await generateHMAC(key, amazonConfig.region);
+  key = await generateHMAC(key, 'ProductAdvertisingAPI');
+  key = await generateHMAC(key, 'aws4_request');
+
+  const signature = await generateHMAC(key, stringToSign);
 
   // Add authentication headers
   config.headers = {
