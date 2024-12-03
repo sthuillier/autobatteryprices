@@ -3,7 +3,7 @@ import { amazonConfig } from '../../config/amazon';
 import { signRequest } from '../../utils/awsSignature';
 
 export const amazonApi = axios.create({
-  baseURL: `https://webservices.amazon.${amazonConfig.region}/paapi5/searchitems`,
+  baseURL: `https://cors-anywhere.herokuapp.com/https://webservices.amazon.${amazonConfig.region}/paapi5/searchitems`,
   headers: {
     'Content-Type': 'application/json'
   }
