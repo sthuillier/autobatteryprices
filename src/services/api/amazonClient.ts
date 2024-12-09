@@ -3,9 +3,18 @@ import { amazonConfig } from '../../config/amazon';
 import { signRequest } from '../../utils/awsSignature';
 
 export const amazonApi = axios.create({
-  baseURL: `https://cors-anywhere.herokuapp.com/https://webservices.amazon.${amazonConfig.region}/paapi5/searchitems`,
+  baseURL: `https://webservices.amazon.${amazonConfig.region}/paapi5/searchitems`,
   headers: {
     'Content-Type': 'application/json'
+  }
+});
+
+export const rapidApi = axios.create({
+  baseURL: `https://real-time-amazon-data.p.rapidapi.com`,
+  headers: {
+    'Content-Type': 'application/json',
+    'x-rapidapi-host': "real-time-amazon-data.p.rapidapi.com",
+    'x-rapidapi-key': "ad6bdcd158mshb6b803358e7d221p14689ajsne08fb14bd14f",
   }
 });
 
@@ -42,4 +51,20 @@ export const createSearchParams = (page: number = 1) => ({
   MaxPrice: 50000, // $500.00
   MinPrice: 5000,  // $50.00
   SortBy: 'Featured'
+});
+
+export const createSearchParamsRapidApi = (page: number): Record<string, string | number | boolean> => ({
+  query: 'car battery automotive',
+  page,
+  country: 'US',
+  sort_by: 'RELEVANCE',
+  product_condition: 'ALL',
+  is_prime: true,
+  deals_and_discounts: 'NONE',
+  category: 'ALL',
+  min_price: 50,
+  max_price: 500,
+  brand: '',
+  seller_id: '',
+  additional_filters: "SortBy=Featured,Condition=New",
 });

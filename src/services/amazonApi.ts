@@ -10,14 +10,14 @@ export async function searchBatteries(params: {
 }): Promise<Battery[]> {
   try {
     // In development, use sample data
-    if (process.env.NODE_ENV === 'development') {
-      return filterBatteries(SAMPLE_DATA, params);
-    }
+    // if (process.env.NODE_ENV === 'development') {
+    //   return filterBatteries(SAMPLE_DATA, params);
+    // }
 
     // Fetch first page of results
     const batteries = await fetchBatteryPage(1);
-    return filterBatteries(batteries, params);
-
+    const _filteredBatteries = filterBatteries(batteries, params)
+    return _filteredBatteries
   } catch (error) {
     console.error('Error fetching batteries:', error);
     // Fallback to sample data

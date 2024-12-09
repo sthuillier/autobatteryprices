@@ -1,4 +1,5 @@
 export interface Battery {
+  asin: string;
   price: number;
   bciGroup: string;
   dimensions: string;
